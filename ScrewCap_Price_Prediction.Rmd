@@ -1,0 +1,188 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+```{r}
+library(dplyr)
+library(readr)
+dataset <- read.table("ScrewCaps.csv", header = TRUE, sep = ",", dec = ".", row.names = 1)
+head(dataset)
+summary(dataset)
+```
+
+```{r}
+
+library(ggplot2)
+
+p <- ggplot(dataset, aes(x = Price)) + geom_histogram(binwidth = 1)
+
+p
+```
+```{r}
+
+library(ggplot2)
+
+p <- ggplot(dataset, aes(x = Price)) + geom_histogram(binwidth = 1)
+
+p
+
+quantile(dataset$Price)  
+```
+
+```{r}
+
+
+
+p <- ggplot(data=dataset, aes(x= Length, y= Price)) + geom_point(size=1) + geom_smooth(method=lm) + ggtitle(" log(ppgdp) versus log(fertility) ")
+
+p
+
+``` 
+```{r}
+
+
+
+p <- ggplot(data=dataset, aes(x= weight, y= Price)) + geom_point(size=1) + geom_smooth(method=lm) + ggtitle(" log(ppgdp) versus log(fertility) ")
+
+p
+
+``` 
+```{r}
+
+
+
+p <- ggplot(data=dataset, aes(x= dataset$Impermeability, y= Price)) + geom_point(size=1) + geom_smooth(method=lm) + ggtitle(" log(ppgdp) versus log(fertility) ")
+
+p
+
+``` 
+
+```{r}
+
+
+p <- ggplot(data=dataset, aes(x= dataset$Shape, y= Price)) + geom_point(size=1) + geom_smooth(method=lm) + ggtitle(" log(ppgdp) versus log(fertility) ")
+
+p
+
+```
+```{r}
+
+
+p <- ggplot(data=dataset, aes(x= dataset$Supplier, y= Price)) + geom_point(size=1) + geom_smooth(method=lm) + ggtitle(" log(ppgdp) versus log(fertility) ")
+
+p
+
+```
+```{r}
+PriceComp_avg <- dataset %>% select(Supplier,Price) %>% group_by(Supplier) %>% summarise(Average_Price = mean(Price))  
+
+head(PriceComp_avg)
+
+PriceComp_min <- dataset %>% select(Supplier,Price) %>% group_by(Supplier) %>% summarise(Average_Price = min(Price))
+
+head(PriceComp_min)
+```
+
+
+```{r}
+
+d <- density(dataset$Mature.Volume)
+hist(dataset$Mature.Volume, breaks=40, probability = TRUE)
+lines(d, col = "red")
+
+```
+
+
+
+```{r}
+library(dplyr)
+dataset <- dataset %>% filter ( Mature.Volume < 600000 )  
+
+```
+
+```{r}
+d <- density(dataset$Mature.Volume)
+hist(dataset$Mature.Volume, breaks=40, probability = TRUE)
+lines(d, col = "red")
+```
+```{r}
+
+library(FactoMineR)
+res.pca <- PCA(dataset, quali.sup=c(1,5,6,7,9), quanti.sup = 10, scale = TRUE)
+summary(res.pca, nbelements = 10, ncp = 4)
+```
+
+```{r}
+
+X <- scale(as.matrix(dataset %>% select(-c(1,5,6,7,9,10))))
+  
+#cov = as.data.frame( (t(X) %*%  X ) / 191)
+as.data.frame(cov(X))
+#cov
+  
+```
+
+
+```{r}
+
+res.pca$var$coord[,1:2]
+
+
+
+```
+
+```{r}
+library(cluster)
+library(fpc)
+
+
+
+#dat <- scale(as.matrix(dataset %>% select(-c(1,5,6,7,9,10))))
+
+dat <- res.pca$ind$coord[,1:2]
+clus <- kmeans(dat, 2, nstart = 20)
+
+
+plotcluster(dat, clus$cluster)
+
+clusplot(dat, clus$cluster, color=TRUE, shade=TRUE, 
+         labels=2, lines=0)
+
+within <- function(i) {
+  
+  return(kmeans(dat, i, nstart = 20)$tot.withinss )
+  
+}
+
+
+clust_tab = c()
+for(i in 1:15) clust_tab <- c(clust_tab, within(i))
+
+
+plot(clust_tab)
+
+
+```
+
+
+```{r}
+res.hcpc <- HCPC(res.pca, nb.clust = -1)
+
+plot(res.hcpc$call$t$within[1:14])
+
+
+```
+
+```{r}
+
+res.hcpc$desc.var$quanti.var
+```
+ 
+```{r}
+catdes(dataset, num.var=1) 
+```
