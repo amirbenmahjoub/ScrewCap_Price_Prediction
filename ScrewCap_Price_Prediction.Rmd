@@ -113,7 +113,7 @@ lines(d, col = "red")
 
 library(FactoMineR)
 res.pca <- PCA(dataset, quali.sup=c(1,5,6,7,9), quanti.sup = 10, scale = TRUE)
-summary(res.pca, nbelements = 10, ncp = 4)
+summary(res.pca, nbelements = 10)
 ```
 
 ```{r}
@@ -153,37 +153,187 @@ plot(dat, col = clus$cluster, pch = 19, frame = FALSE,
 points(clus$centers, col = 1:4, pch = 8, cex = 3)
 
 
-#plotcluster(dat, clus$cluster)
-#clusplot(dat, clus$cluster, color=TRUE, shade=TRUE, 
-        # labels=2, lines=0)
-#plot(dat, col=clus$cluster)
+plotcluster(dat, clus$cluster)
+clusplot(dat, clus$cluster, color=TRUE, shade=TRUE, 
+         labels=2, lines=0)
+plot(dat, col=clus$cluster)
 
 within <- function(i) {
   return(kmeans(dat, i, nstart = 20)$tot.withinss )
 }
 
 clust_tab = c()
-for(i in 1:15) clust_tab <- c(clust_tab, within(i))
+for(i in 1:5) clust_tab <- c(clust_tab, within(i)/within(i+1))
 
 plot(clust_tab)
 
 
 ```
 
+```{r}
+
+library(FactoMineR)
+res.pca3 <- PCA(dataset, quali.sup=c(1,5,6,7,9), quanti.sup = 10, scale = TRUE, ncp = 3)
+res.pca2 <- PCA(dataset, quali.sup=c(1,5,6,7,9), quanti.sup = 10, scale = TRUE, ncp = 2)
+res.pca4 <- PCA(dataset, quali.sup=c(1,5,6,7,9), quanti.sup = 10, scale = TRUE, ncp = 4)
+```
 
 ```{r}
-res.hcpc <- HCPC(res.pca, nb.clust = -1)
+res.hcpc3 <- HCPC(res.pca3, nb.clust = -1)
 
-plot(res.hcpc$call$t$within[1:14])
+res.hcpc2 <- HCPC(res.pca2, nb.clust = -1)
+res.hcpc4 <- HCPC(res.pca4, nb.clust = -1)
+
+
+
+plot(res.hcpc2$call$t$within[1:14])
+plot(res.hcpc3$call$t$within[1:14])
+plot(res.hcpc4$call$t$within[1:14])
 
 
 ```
 
 ```{r}
 
-res.hcpc$desc.var$quanti.var
+res.hcpc2$desc.var$quanti.var
+res.hcpc3$desc.var$quanti.var
+res.hcpc4$desc.var$quanti.var
 ```
- 
+
+
 ```{r}
-catdes(dataset, num.var=1) 
+
+res.hcpc3$desc.var$test.chi2
+
 ```
+
+```{r}
+
+res.hcpc2$desc.var$category$`1`
+res.hcpc3$desc.var$category$`1`
+res.hcpc4$desc.var$category$`1`
+
+
+```
+
+```{r}
+
+res.hcpc2$desc.var$category$`2`
+res.hcpc3$desc.var$category$`2`
+res.hcpc4$desc.var$category$`2`
+
+
+```
+
+```{r}
+
+res.hcpc3$desc.var
+
+```
+
+
+
+
+```{r}
+
+res.hcpc2$desc.var$quanti$`2`
+res.hcpc3$desc.var$quanti$`2`
+res.hcpc4$desc.var$quanti$`2`
+
+```
+
+
+```{r}
+catdes(dataset, num.var= 7) 
+```
+
+
+```{r}
+
+res.famd = FAMD(dataset, ncp = 5, sup.var = c(10, 7,1,5) )
+
+
+```
+
+```{r}
+res.famd$eig
+
+
+```
+
+```{r}
+
+res.hcpc <- HCPC(res.famd, nb.clust = -1, graph =  FALSE)
+
+plot.HCPC(res.hcpc, choice = "map", draw.tree = FALSE, select = "drawn", title = '')
+
+
+res.famd
+
+
+```
+
+
+```{r}
+library(dplyr)
+centroids <- res.hcpc$call$X %>% group_by(clust) %>% summarise(Dim.1 = mean(Dim.1), Dim.2 = mean(Dim.2), Dim.3 = mean(Dim.3), Dim.4 = mean(Dim.4),
+                                                               Dim.5 = mean(Dim.5))
+
+centroids
+
+```
+
+```{r}
+
+P <- dataset[3,]
+
+
+famd = FAMD(dataset, ncp = 5, sup.var = c(10,7,1,5))
+
+COORD= as.matrix( predict.FAMD(famd, P)$coord)
+C1 = as.matrix( as.data.frame(centroids[1,2:6]))
+C2 = as.matrix( as.data.frame(centroids[2,2:6]))
+C3 = as.matrix( as.data.frame(centroids[3,2:6]))
+C4 = as.matrix( as.data.frame(centroids[4,2:6]))
+C5 = as.matrix( as.data.frame(centroids[5,2:6]))
+norm(COORD - C1 )
+norm(COORD - C2 )
+norm(COORD - C3 )
+norm(COORD - C4 )
+norm(COORD - C5 )
+
+
+
+
+
+
+```
+
+
+```{r}
+ PRICE <- res.hcpc$data.clust %>% group_by(clust) %>% summarise(price_moy = mean(Price), price_sd = sd(Price))
+PRICE
+
+res.hcpc$data.clust
+```
+
+
+
+```{r}
+#  Linear Regression 
+fit <- lm(  Price ~  Diameter +  weight + nb.of.pieces + Impermeability + 
+              Mature.Volume + Raw.Material + Length + Supplier + Finishing + Shape, data= dataset)
+
+
+
+P <- dataset[56,]
+P2 <- P %>% select(-c(10))
+P
+
+predict(fit, P2)
+
+
+
+
+```
+
