@@ -1,197 +1,422 @@
 ---
-title: "R Notebook"
+title: "Case study - Screw Caps price prediction"
 output: html_notebook
+author: "Amir Benmahjoub"
+Date: "20-10-2017"
 ---
 
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
 
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+A common approach to determine the cost of products is the should cost method. It consists in estimating what a product should cost based on materials, labor, overhead, and profit margin. Although this strategy is very accurate, it has the drawback of being tedious and it requires expert knowledge of industrial technologies and processes. To get a quick estimation, it is possible to build a statistical model to predict the price of products given their characteristics. With such a model, it would no longer be necessary to be an expert or to wait several days to assess the impact of a design modification, a change in supplier or a change in production site. Before builing a model, it is important to explore the data which is the aim of this case study. This study was commissioned by a cosmetics company that wants to estimate the price of Screw Caps of shampoo bottles. 
+
+Let's first load the database study it's structure and load the différent packages. 
 
 ```{r}
+#Loading the different packages for this study 
 library(dplyr)
 library(readr)
-dataset <- read.table("ScrewCaps.csv", header = TRUE, sep = ",", dec = ".", row.names = 1)
-head(dataset)
-summary(dataset)
-```
-
-```{r}
-
-
-
-d <- density(dataset$Price)
-hist(dataset$Price, breaks=40, probability = TRUE)
-lines(d, col = "red")
-
-
-
-```
-```{r}
-
 library(ggplot2)
-
-quantile(dataset$Price)  
-```
-
-```{r}
-
-
-
-p <- ggplot(data=dataset, aes(x= Length, y= Price)) + geom_point(size=1) + geom_smooth(method=lm) + ggtitle(" log(ppgdp) versus log(fertility) ")
-
-p
-
-``` 
-```{r}
-
-
-
-p <- ggplot(data=dataset, aes(x= weight, y= Price)) + geom_point(size=1) + geom_smooth(method=lm) + ggtitle(" log(ppgdp) versus log(fertility) ")
-
-p
-
-``` 
-```{r}
-
-
-
-p <- ggplot(data=dataset, aes(x= dataset$Impermeability, y= Price)) + geom_point(size=1) + geom_smooth(method=lm) + ggtitle(" log(ppgdp) versus log(fertility) ")
-
-p
-
-``` 
-
-```{r}
-
-
-p <- ggplot(data=dataset, aes(x= dataset$Shape, y= Price)) + geom_point(size=1) + geom_smooth(method=lm) + ggtitle(" log(ppgdp) versus log(fertility) ")
-
-p
+library(FactoMineR)
+library(cluster)
+library(fpc)
+library(factoextra)
+library(FactoInvestigate)
+library(plotly)
 
 ```
+
+
+**Screw Caps Dataset**
+
+Now, we load the dataset used for this study:
+
+
 ```{r}
+#Loading the dataset
+dataset <- read.table("ScrewCaps.csv", header = TRUE, sep = ",", dec = ".", row.names = 1)
 
+#Printing the dataset
+head(dataset)
 
-p <- ggplot(data=dataset, aes(x= dataset$Supplier, y= Price)) + geom_point(size=1) + geom_smooth(method=lm) + ggtitle(" log(ppgdp) versus log(fertility) ")
+#Understanding the structure
+print(paste0("DB Dimensions: ", dim(dataset)[1]," X " , dim(dataset)[2] ))
+summary(dataset)
 
-p
 
 ```
+
+The data ScrewCap.csv contains 195 lots of screw caps described by 11 variables. Diameter, weight, length are the physical characteristics of the cap; nb.of.pieces corresponds to the number of elements of the cap (the picture above corresponds to a cap with 2 pieces: the valve (clapet) is made of a different material); Mature.volume corresponds to the number of caps ordered and bought by the compagny (number in the lot). All the categorical features are Factors. The other features are numerical. 
+
+**Univariate and bivariate descriptive statistics**
+
+*Price distribution*
+
 ```{r}
-PriceComp_avg <- dataset %>% select(Supplier,Price) %>% group_by(Supplier) %>% summarise(Average_Price = mean(Price))  
+d <- density(dataset$Price)
+#Plotting the histogram
+hist(dataset$Price, breaks=40, probability = TRUE, main = "Price distribution",
+     xlab = "Price")
+#Plotting the density
+lines(d, col = "red")
+```
+
+We have here a bimodal distribution and we can describe it in more details with the quantiles: 
+
+```{r}
+
+p <- plot_ly(type = 'box') %>%  add_boxplot(y = dataset$Price, jitter = 0.3, pointpos = -1.8, boxpoints = 'all',
+              marker = list(color = 'rgb(7,40,89)'),
+              line = list(color = 'rgb(7,40,89)'),
+              name = "All Points") %>%  layout( title = 'Price Boxplot',  yaxis = list(title = 'Price'))
+p
+```
+
+
+Using this plotly boxplot we notice that we have 25% of the prices between 6.477451 and 11.807022. 50% between 6.477451 and 14.384413 and 75% between 6.477451 and 18.902429. The remaning 25‰ are data located in a wide range of
+prices between 18.902429 and 46.610372 
+
+
+*Price dependency on length*
+
+Let's study now the price dependency on lenght. 
+
+```{r}
+p <- ggplot(data=dataset, aes(x= Length, y= Price)) + geom_point(size=1) + geom_smooth(method=lm) + ggtitle(" Price versus lenght ")
+ggplotly(p)
+
+fit_price_lenght <- lm(Price~Length, data=dataset)
+summary(fit_price_lenght)
+``` 
+
+We can observe a dependence. 63.9 % of the variability of the price is explained by the lenght. 
+
+Now we study the price dependency on weight. 
+
+```{r}
+p <- ggplot(data=dataset, aes(x= weight, y= Price)) + geom_point(size=1) + geom_smooth(method=lm) + ggtitle(" Price versus weight ")
+ggplotly(p)
+
+fit_price_weight <- lm(Price~weight, data=dataset)
+summary(fit_price_weight)
+``` 
+
+We can also observe a dependence. 62 % of the variability of the price is explained by the weight. 
+
+Now we will discuss the price dependency on some categorical features such as Impermeability, Shape and Supplier. 
+
+```{r}
+
+p <- plot_ly(type = 'box') %>%  add_boxplot(y = dataset$Price , x = dataset$Impermeability, jitter = 0.3, pointpos = -1.8, boxpoints = 'all',
+              marker = list(color = 'rgb(7,40,89)'),
+              line = list(color = 'rgb(7,40,89)'),
+              name = "Price box") %>%  layout( title = 'Price versus Impermeability Boxplot',  yaxis = list(title = 'Price'))
+p
+
+fit_price_impermeability <- lm(Price~ Impermeability, data=dataset)
+summary(fit_price_impermeability)
+
+
+``` 
+
+The boxplot show us that each impermeability type gather a wide range of prices : 
+
+* Type 1 : from 1.6 to 39.7
+* Type 2 : from 12.8 to 46.6
+
+However, we notice  a dependence. 43 % of the variability of the price is explained by the impermeability type. Plus, we observe that  the price range is statistically different for Type 1 and Type 2. Type 1 is statistically cheaper than Type 2 : 
+
+* Type 1 : 50% of the data between $q_{1} = 11$.69 and $q_{3} = 17$
+* Type 2 : 50% of the data between $q_{1} = 26.5$ and $q_{3} = 34.1$
+
+
+Concerning the price dependency on Shape : 
+
+
+
+```{r}
+
+
+p <- plot_ly(type = 'box') %>%  add_boxplot(y = dataset$Price , x = dataset$Shape, jitter = 0.3, pointpos = -1.8, boxpoints = 'all',
+              marker = list(color = 'rgb(7,40,89)'),
+              line = list(color = 'rgb(7,40,89)'),
+              name = "Price box") %>%  layout( title = 'Price versus Shape Boxplot',  yaxis = list(title = 'Price'))
+p
+
+fit_price_shape <- lm(Price~ Shape, data=dataset)
+summary(fit_price_shape)
+
+```
+
+
+In this case, it's hard to notice  a dependence between price and shape. Only 24 % of the variability of the price is explained by the Shape type. However, there is some insights  :
+
+* Comparing Shape 1 and Shape 2 we notice that shape 1 prices are more gathered into a small statisticall interval ( $q_{2} = 11.1$ , $q_{3} =16.1 $) in comparaison with shape 2 price data ( $q_{2} = 14$ , $q_{3} =28.8 $)
+* There isn't many products for shape 3 and Shape 4 in comparaison with the two first shapes. However, we can see that the prices for shape 3 and shape 4 are located in a small interval in comparaison with the two other last shapes.
+
+
+Concerning the price dependency on Suppliers : 
+
+
+```{r}
+
+
+p <- plot_ly(type = 'box') %>%  add_boxplot(y = dataset$Price , x = dataset$Supplier, jitter = 0.3, pointpos = -1.8, boxpoints = 'all',
+              marker = list(color = 'rgb(7,40,89)'),
+              line = list(color = 'rgb(7,40,89)'),
+              name = "Price box") %>%  layout( title = 'Price versus Impermeability Boxplot',  yaxis = list(title = 'Price'))
+p
+
+fit_price_supplier <- lm(Price~ Supplier, data=dataset)
+summary(fit_price_supplier)
+
+```
+
+There is no dependency on the price. Let's study the prices in more details : 
+
+
+```{r}
+PriceComp_avg <- dataset %>% select(Supplier,Price) %>% group_by(Supplier) %>% summarise(Average_Price = mean(Price)) 
 
 head(PriceComp_avg)
 
-PriceComp_min <- dataset %>% select(Supplier,Price) %>% group_by(Supplier) %>% summarise(Average_Price = min(Price))
+PriceComp_min <- dataset %>% select(Supplier,Price) %>% group_by(Supplier) %>% summarise(Minimum_Price = min(Price))
 
 head(PriceComp_min)
+
+PriceComp_avg_price_per_weight <- PriceComp_min <- dataset %>% select(Supplier,Price,weight) %>% group_by(Supplier) %>% summarise(Price_per_weight = mean(Price)/mean(weight))
+
+head(PriceComp_avg_price_per_weight)
+
 ```
+
+*In terms of average price, the supplier C is the less expensive. 
+*In terms of absolute price, the supplier B is the less expensive. However, Supplier B is also the supplier which has the highest absolute price.
+*In terms of average price / weight Supplier A has is the less expensive.
+
+One important point in exploratory data analysis consists in identifying potential outliers. 
+Let's identify this outliers given different features. For Mature.Volume variable : 
 
 
 ```{r}
 
 d <- density(dataset$Mature.Volume)
-hist(dataset$Mature.Volume, breaks=40, probability = TRUE)
+hist(dataset$Mature.Volume, breaks=40, probability = TRUE, main = "Mature Volume distribution",
+     xlab = "Mature Volume")
 lines(d, col = "red")
 
 ```
 
 
+We can clearly notice here an outlier. We can now remove it 
+
 
 ```{r}
-library(dplyr)
+
 dataset <- dataset %>% filter ( Mature.Volume < 600000 )  
 
 ```
 
+Let's verify the data now : 
+
 ```{r}
 d <- density(dataset$Mature.Volume)
-hist(dataset$Mature.Volume, breaks=40, probability = TRUE)
+hist(dataset$Mature.Volume, breaks=40, probability = TRUE,main = "Mature Volume distribution",
+     xlab = "Mature Volume")
+lines(d, col = "red")
+```
+
+After studying the other features distribution, we notive that there is no other outliers. Plus, it seems that every numerical feature have the same trend structure. Please find below the other distributions. 
+
+
+```{r}
+d <- density(dataset$Diameter)
+hist(dataset$Diameter, breaks=40, probability = TRUE, main = "Diameter distribution",
+     xlab = "Mature Volume")
+lines(d, col = "red")
+
+
+```
+```{r}
+d <- density(dataset$weight)
+hist(dataset$weight, breaks=40, probability = TRUE, main = "Mature Volume distribution",
+     xlab = "Distribution")
 lines(d, col = "red")
 ```
 ```{r}
+d <- density(dataset$nb.of.pieces)
+hist(dataset$nb.of.pieces, breaks=40, probability = TRUE, main = "Nb of pieces distribution",
+     xlab = "Nb of pieces")
+lines(d, col = "red")
+```
+```{r}
+d <- density(dataset$Length)
+hist(dataset$Length, breaks=40, probability = TRUE, main = "Lenght distribution",
+     xlab = "Lenght")
+lines(d, col = "red")
+```
 
-library(FactoMineR)
+
+Now we will perform a PCA on the data. A PCA will allows us to fin a low-dimensional reprensation of the data that 
+captures the "essense" of the raw data. Plus, a PCA will allows us denoise the data. This preprocessing and 
+data exploration helps us to better understand/visualise the relations between the differents features and observations and to prepare the data for the prediction process. PCA deals with continuous variables but
+categorical variables are the projection of the categories at the barycentre of the observations which take the categories. 
+
+As we want to predict the price and we have Supplier, Shape, Impermeability and Finishing as qualitative variables,
+we will consider this last ones as illustrative. Let's now process the PCA : 
+
+```{r}
 res.pca <- PCA(dataset, quali.sup=c(1,5,6,7,9), quanti.sup = 10, scale = TRUE)
 summary(res.pca, nbelements = 10)
+fviz_pca_ind(res.pca)
+fviz_pca_ind(res.pca, col.ind="cos2", label=c("quali"), geom = "point") + scale_color_gradient2(low="lightblue", mid="blue", high="darkblue", midpoint=0.6)+ theme_minimal() 
 ```
 
-```{r}
 
+Before commenting this graphs, let's compute also the correlation matrix : 
+
+
+```{r}
+#Scaling the variables: 
 X <- scale(as.matrix(dataset %>% select(-c(1,5,6,7,9,10))))
-  
-#cov = as.data.frame( (t(X) %*%  X ) / 191)
+#Plotting the correlation matrix: 
 as.data.frame(cov(X))
-#cov
-  
 ```
 
 
+The variable factor map shows us that : 
+
+* Lenght, weight, price and diameter are well projected on the 1st dimensional subspace and also correlated between
+them positively. In fact, it's natural to say that when the lenght increase for example then the weight, Price and Diameter increase also. 
+* Mature Volume and Number of Pieces are well projected on the 2nd dimensional subspace and then are not really 
+correlated to Lenght, weight, Price and Diameter. Plus, we notice that Mature Volume and Number of Pieces are negatively correlated which means that when the more pieces we have for a product the less the compagny command this kind of product. 
+
+This correlations are well explained in the covariance matrix. The cells that correspond to a combinaison of
+highly correlated features have a cov  higher than 0.9 and the cells that correspond to a combinaison of 
+uncorrelated (orthogonal) features have a cov lower than 0.2 - 0.3. 
+
+* The PCA focuses on the relationships between the continuous variables. In fact, the PCA compute the 
+vectors which are the synthetic variables the most correlated to all the continuous variables. Then, its possible to study the projection of the observations/features on this vectors and discuss the link between them. The issue
+is that the PCA does not handle categorical variables to the computation of the synthetic vectors.
+
+* Let's now focus on the individual factor map : The barycentre related to $Impermeability = Type2$ and
+$Raw.Material = PS$ are near to the first synthetic axe which means that this two categories Type2 and PS are highly correlated to this axe and then, given the previous analysis to Lenght, weight, price and diameter. In fact, for instance, we have seen that Type 2 have a higher price in average than Type 1. We can say also for example
+than a PS product is related to a high diameter. 
+
+
+
 ```{r}
-res.pca$var$coord[,1:2]
+plot(res.pca$eig[,3], type="l", ylab = "Cumulative percentage of inertia", xlab = "Nb of synthetic vectors")
 ```
 
-```{r}
-library(cluster)
-library(fpc)
-library(factoextra)
 
+* Concerning the pourcentage of inertia, this graph show us that we can synthetise more than 95% of the variance with the 3 first synthetic vectors. 
+
+
+The R object with the two principal components which are the synthetic variables the most correlated to all the variables is the two eigen vectors of the PCA linked to the two highest eigenvalues. 
+
+```{r}
+as.data.frame(res.pca$var$coord[,1:2])
+```
+
+PCA is often used as a pre-processing step before applying a clustering algorithm. In fact, we often perform the CAH or the k-means on the $k$ principal components to denoise the data. In this setting $k$ is choosen as large since we do not want to loose any information, but want to discard the last components that can be considered as noise. Consequently, we  keep the number of dimensions $k$ such that we reach 95% of the inertia in PCA. In our case we have $k=3$ (cf last graph)
+
+
+Let's now perform a kmeans algorithm on the selected k principal components of PCA. 
+
+
+```{r}
+
+# We keep the 3 first components of the PCA
 dat <- res.pca$ind$coord[,1:3]
+#Performing the clustering
 clus <- kmeans(dat, 3, nstart = 20)
 
+#Visualizing the clusters 
 
-fviz_nbclust(dat, kmeans , method = "wss") +
-    geom_vline(xintercept = 3, linetype = 2)
-
-
-
-
-fviz_cluster(clus, data = dat)
-
-plot(dat, col = clus$cluster, pch = 19, frame = FALSE,
-     main = "K-means with k = 3")
+plot(dat, col = clus$cluster, pch = 19, frame = FALSE,  main = "K-means with k = 3")
 points(clus$centers, col = 1:4, pch = 8, cex = 3)
 
+# Visualizing the total within sum of squares and using "méthode du coude"
 
-plotcluster(dat, clus$cluster)
-clusplot(dat, clus$cluster, color=TRUE, shade=TRUE, 
-         labels=2, lines=0)
-plot(dat, col=clus$cluster)
-
-within <- function(i) {
-  return(kmeans(dat, i, nstart = 20)$tot.withinss )
-}
-
-clust_tab = c()
-for(i in 1:5) clust_tab <- c(clust_tab, within(i)/within(i+1))
-
-plot(clust_tab)
-
+fviz_nbclust(dat, kmeans, method = "wss") + geom_vline(xintercept = 3, linetype = 2)
 
 ```
 
+Using "methode du coude" we find that the optimal number of cluster is 3. 
+
+
+
 ```{r}
 
-library(FactoMineR)
+#Performing a PCA on the 3 principal compenents
 res.pca3 <- PCA(dataset, quali.sup=c(1,5,6,7,9), quanti.sup = 10, scale = TRUE, ncp = 3)
-res.pca2 <- PCA(dataset, quali.sup=c(1,5,6,7,9), quanti.sup = 10, scale = TRUE, ncp = 2)
-res.pca4 <- PCA(dataset, quali.sup=c(1,5,6,7,9), quanti.sup = 10, scale = TRUE, ncp = 4)
+
+
+#res.pca2 <- PCA(dataset, quali.sup=c(1,5,6,7,9), quanti.sup = 10, scale = TRUE, ncp = 2)
+#res.pca4 <- PCA(dataset, quali.sup=c(1,5,6,7,9), quanti.sup = 10, scale = TRUE, ncp = 4)
 ```
 
 ```{r}
+
+# Performing the AHC on the 3 principal components of the PCA
+
 res.hcpc3 <- HCPC(res.pca3, nb.clust = -1)
 
-res.hcpc2 <- HCPC(res.pca2, nb.clust = -1)
-res.hcpc4 <- HCPC(res.pca4, nb.clust = -1)
+#res.hcpc2 <- HCPC(res.pca2, nb.clust = -1)
+#res.hcpc4 <- HCPC(res.pca4, nb.clust = -1)
 
 
 
-plot(res.hcpc2$call$t$within[1:14])
+#plot(res.hcpc2$call$t$within[1:14])
+
+
 plot(res.hcpc3$call$t$within[1:14])
-plot(res.hcpc4$call$t$within[1:14])
+
+#plot(res.hcpc4$call$t$within[1:14])
 
 
 ```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+The cluster 1 is made of individuals sharing :
+- high values for the variable Mature.Volume. 
+- low values for the variables nb.of.pieces, Price, weight, Length and Diameter (variables are sorted from the weakest).
+
+The cluster 2 is made of individuals sharing :
+- high values for the variable nb.of.pieces. 
+- low values for the variables Mature.Volume, Diameter, Length, weight and Price (variables are sorted from the weakest).
+
+The cluster 3 is made of individuals such as 89, 90, 131, 161, 163 and 164. This group is characterized by :
+- high values for the variables Length, Diameter, weight and Price (variables are sorted from the strongest).
+- low values for the variables nb.of.pieces and Mature.Volume (variables are sorted from the weakest).
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ```{r}
 
@@ -275,9 +500,8 @@ res.famd
 
 
 ```{r}
-library(dplyr)
-centroids <- res.hcpc$call$X %>% group_by(clust) %>% summarise(Dim.1 = mean(Dim.1), Dim.2 = mean(Dim.2), Dim.3 = mean(Dim.3), Dim.4 = mean(Dim.4),
-                                                               Dim.5 = mean(Dim.5))
+
+centroids <- res.hcpc$call$X %>% group_by(clust) %>% summarise(Dim.1 = mean(Dim.1), Dim.2 = mean(Dim.2), Dim.3 = mean(Dim.3), Dim.4 = mean(Dim.4),Dim.5 = mean(Dim.5))
 
 centroids
 
@@ -326,14 +550,155 @@ fit <- lm(  Price ~  Diameter +  weight + nb.of.pieces + Impermeability +
 
 
 
-P <- dataset[56,]
+P <- dataset[168,]
 P2 <- P %>% select(-c(10))
-P
 
+P
 predict(fit, P2)
 
 
 
 
 ```
+
+
+
+
+
+```{r}
+
+
+new_data_set <- res.hcpc$data.clust
+View(new_data_set)
+res_famd_new = FAMD(new_data_set, ncp = 6, sup.var = c(10,7,1,5) )
+
+
+
+```
+
+
+```{r}
+
+new_data_set_bis <- as.data.frame(res_famd_new$ind$coord)
+new_data_set_bis$Price <- dataset$Price
+new_data_set_bis <- new_data_set_bis %>% rename(Dim1 = Dim.1, Dim2 = Dim.2,Dim3 = Dim.3,Dim4 = Dim.4, Dim5 = Dim.5, Dim6 = Dim.6)
+P <- new_data_set[1,]
+
+
+predict_price <- function(v) {
+  
+  fit_final <- lm(Price ~ Dim1 + Dim2 + Dim3 + Dim4 + Dim5 + Dim6 , data= new_data_set_bis)
+  P_bis <- as.data.frame(predict.FAMD(res_famd_new, v)$coord)
+  P_bis <- P_bis %>% rename(Dim1 = 'Dim 1', Dim2 = 'Dim 2',Dim3 = 'Dim 3',Dim4 = 'Dim 4', Dim5 = 'Dim 5', Dim6 = 'Dim 6')
+  return(predict(fit_final, P_bis))
+  
+  
+  
+  
+  
+  
+}
+
+
+predict_price(P)
+
+
+
+
+
+
+
+
+
+
+```
+
+
+
+
+
+
+
+
+```{r}
+
+learning_data_set <- rbind(dataset[1:23,], dataset[30:117,],dataset[178:188,])
+testing_data_set <-  rbind(dataset[24:39,], dataset[118:177,],dataset[189:191,])
+
+
+res_famd_learning = FAMD( learning_data_set , ncp = 5, sup.var = c(10, 7,1,5) )
+res_hcpc_learning <- HCPC(res.famd, nb.clust = -1, graph =  FALSE)
+new_data_set_learning <- res_hcpc_learning$data.clust
+res_famd_new_learning = FAMD(new_data_set_learning, ncp = 6, sup.var = c(10,7,1,5) )
+new_data_set_bis_learning <- as.data.frame(res_famd_new$ind$coord)
+new_data_set_bis_learning$Price <- dataset$Price
+new_data_set_bis_learning <- new_data_set_bis_learning %>% rename(Dim1 = Dim.1, Dim2 = Dim.2,Dim3 = Dim.3,Dim4 = Dim.4, Dim5 = Dim.5, Dim6 = Dim.6)
+
+predict_price_final <- function(v) {
+  
+  
+  fit_final <- lm(Price ~ Dim1 + Dim2 + Dim3 + Dim4 + Dim5 + Dim6 , data= new_data_set_bis_learning)
+  
+  centroids <- res_hcpc_learning$call$X %>% group_by(clust) %>% summarise(Dim.1 = mean(Dim.1), Dim.2 = mean(Dim.2), Dim.3 = mean(Dim.3), Dim.4 = mean(Dim.4),Dim.5 = mean(Dim.5))
+  COORD <- as.matrix( predict.FAMD(res_famd_learning, v)$coord)
+  C1 <- as.matrix( as.data.frame(centroids[1,2:6]))
+  C2 <- as.matrix( as.data.frame(centroids[2,2:6]))
+  C3 <- as.matrix( as.data.frame(centroids[3,2:6]))
+  C4 <- as.matrix( as.data.frame(centroids[4,2:6]))
+  C5 <- as.matrix( as.data.frame(centroids[5,2:6]))
+  k <- which.min(c(norm(COORD - C1 ),norm(COORD - C2 ),norm(COORD - C3 ),norm(COORD - C4 ),norm(COORD - C5 )))
+  v$clust <- k 
+  v_bis <- as.data.frame(predict.FAMD(res_famd_new, v)$coord)
+  v_bis <- v_bis %>% rename(Dim1 = 'Dim 1', Dim2 = 'Dim 2',Dim3 = 'Dim 3',Dim4 = 'Dim 4', Dim5 = 'Dim 5', Dim6 = 'Dim 6')
+  
+  return(predict(fit_final, v_bis))
+  
+}
+
+P <- new_data_set[29,]
+
+predict_price_final(P)
+
+```
+```{r}
+predict_price_final <- function(v) {
+  
+  
+  fit_final <- lm(Price ~ Dim1 + Dim2 + Dim3 + Dim4 + Dim5 + Dim6 , data= new_data_set_bis_learning)
+  
+  centroids <- res_hcpc_learning$call$X %>% group_by(clust) %>% summarise(Dim.1 = mean(Dim.1), Dim.2 = mean(Dim.2), Dim.3 = mean(Dim.3), Dim.4 = mean(Dim.4),Dim.5 = mean(Dim.5))
+  COORD <- as.matrix( predict.FAMD(res_famd_learning, v)$coord)
+  C1 <- as.matrix( as.data.frame(centroids[1,2:6]))
+  C2 <- as.matrix( as.data.frame(centroids[2,2:6]))
+  C3 <- as.matrix( as.data.frame(centroids[3,2:6]))
+  C4 <- as.matrix( as.data.frame(centroids[4,2:6]))
+  C5 <- as.matrix( as.data.frame(centroids[5,2:6]))
+  k <- which.min(c(norm(COORD - C1 ),norm(COORD - C2 ),norm(COORD - C3 ),norm(COORD - C4 ),norm(COORD - C5 )))
+  v$clust <- k 
+  v_bis <- as.data.frame(predict.FAMD(res_famd_new, v)$coord)
+  v_bis <- v_bis %>% rename(Dim1 = 'Dim 1', Dim2 = 'Dim 2',Dim3 = 'Dim 3',Dim4 = 'Dim 4', Dim5 = 'Dim 5', Dim6 = 'Dim 6')
+  
+  return(predict(fit_final, v_bis))
+  
+}
+
+vect <- c()
+
+for (i in 1:79) {
+  
+  
+  v <- testing_data_set[i,]
+  vect <- c(vect,predict_price_final(v))
+  
+
+}
+
+M<- as.data.frame(cbind(vect,testing_data_set$Price, abs(testing_data_set$Price-vect)))
+View(M)
+
+
+```
+
+
+
 
