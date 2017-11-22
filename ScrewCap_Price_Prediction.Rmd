@@ -351,8 +351,7 @@ Using "methode du coude" we find that the optimal number of cluster is 3.
 res.pca3 <- PCA(dataset, quali.sup=c(1,5,6,7,9), quanti.sup = 10, scale = TRUE, ncp = 3)
 
 
-#res.pca2 <- PCA(dataset, quali.sup=c(1,5,6,7,9), quanti.sup = 10, scale = TRUE, ncp = 2)
-#res.pca4 <- PCA(dataset, quali.sup=c(1,5,6,7,9), quanti.sup = 10, scale = TRUE, ncp = 4)
+
 ```
 
 ```{r}
@@ -361,205 +360,123 @@ res.pca3 <- PCA(dataset, quali.sup=c(1,5,6,7,9), quanti.sup = 10, scale = TRUE, 
 
 res.hcpc3 <- HCPC(res.pca3, nb.clust = -1)
 
-#res.hcpc2 <- HCPC(res.pca2, nb.clust = -1)
-#res.hcpc4 <- HCPC(res.pca4, nb.clust = -1)
 
 
 
-#plot(res.hcpc2$call$t$within[1:14])
 
 
-plot(res.hcpc3$call$t$within[1:14])
+plot(res.hcpc3$call$t$within[1:14]) 
 
-#plot(res.hcpc4$call$t$within[1:14])
+
 
 
 ```
 
 
+* The optimal number of clusters calculated by the hcpc function is 3. This function used "method du coude" on   call$t$within. 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-The cluster 1 is made of individuals sharing :
-- high values for the variable Mature.Volume. 
-- low values for the variables nb.of.pieces, Price, weight, Length and Diameter (variables are sorted from the weakest).
-
-The cluster 2 is made of individuals sharing :
-- high values for the variable nb.of.pieces. 
-- low values for the variables Mature.Volume, Diameter, Length, weight and Price (variables are sorted from the weakest).
-
-The cluster 3 is made of individuals such as 89, 90, 131, 161, 163 and 164. This group is characterized by :
-- high values for the variables Length, Diameter, weight and Price (variables are sorted from the strongest).
-- low values for the variables nb.of.pieces and Mature.Volume (variables are sorted from the weakest).
-
-
-
-
-
-
-
-
-
-
-
-
+ 
+* We now aim at describing the clusters. First, let's study the variables which are most important for the partition. The hcpc function compute a fisher test that allows us to evaluate the link between qualitative and quantitative variable. Here : the clusters and our quantitative variables. 
 
 
 ```{r}
 
-res.hcpc2$desc.var$quanti.var
-res.hcpc3$desc.var$quanti.var
-res.hcpc4$desc.var$quanti.var
+
+as.data.frame(res.hcpc3$desc.var$quanti.var)
+
 ```
 
+We notice here that all our quantitative variables describe well our 3 clusters. The 3 variables that describe very well our 3 clusters (low p-value) are Lenght, Diameter and weight. However, this is linked with our PCA. In fact, this last three variables are very representative of the first dimension of the PCA and then describe well our data. Given the fact that we performed the hcpc of the PCA data, it's normal to find that these three variables describe well our clusters. 
 
-```{r}
 
+For the qualitative variables, we perform a khi2 test: 
+
+
+```{r }
 res.hcpc3$desc.var$test.chi2
-
 ```
+
+
+The variable Impermeability seems to be the most related to the partitioning (lowest p-value) 
+
+
+* Now we want to characterize cluster 1 (same methode for the other clusters)  in terms of variables that best describe this cluster. In other terms, we want to know for each quantitative variable $x$, if there is a statistical difference for this variable between cluster $1$ and the whole population (simple standard Gaussian distribution test)
+
+For the quantitative variables : 
+
+```{r}
+res.hcpc3$desc.var$quanti$`1`
+```
+
+
+The Cluster 1 is well defined by all the quantitative variables and more specifically by Mature.Volume. We can guess this result because the cluster 1 ( black points) is situated on the same axe than the Mature.Volume vector on the previous PCA. 
+
+
+
+
+
 
 ```{r}
 
-res.hcpc2$desc.var$category$`1`
 res.hcpc3$desc.var$category$`1`
-res.hcpc4$desc.var$category$`1`
-
 
 ```
 
+On the same vein, $Raw.Material=PP$ and $Shape=Shape 2$ are defining well the $cluster 1$ given the $p-value$.
+
+It is also interesting to illustrate the cluster 1 by computing its paragons
+
 ```{r}
-
-res.hcpc2$desc.var$category$`2`
-res.hcpc3$desc.var$category$`2`
-res.hcpc4$desc.var$category$`2`
-
-
+res.hcpc3$desc.ind$para$`1`
 ```
 
+The product 94,95,142,74,144 are closest to the centre of the cluster 1 centroid and then, are representative of this cluster. 
+
+
+If someone ask you why you have selected k components and not k + 1 or k − 1, what is your answer?
+(could you suggest a strategy to assess the stability of the approach? - are there many differences
+between the clustering obtained on k components or on the initial data) 
+
+We didn't choose $k = 2$ because in this configuration, the two first eigen vectors describe less than 95% of the data. We didn't choose $k=4$ because it's not necessary given the fact that the configuration $k=3$ is describing already 95% of our data.
+
+A strategy to assess the stability of the approach is to do the same study that we did but for the hcpc with 2 and 4 compenent. Then, we will be able to compare the different p-values for each configuration and see going form 2 to 3 or from 3 to 4 have a significant impact on the results of our clustering. After doing this study we noticed that we have the same p-value results for $k=3$ and $k=4$. Plus, we noticed that we have the  p-value results are in average better for  $k=3$ than $k=2$. This insights explain us that 3 components is the best compromise and choice. On the same vein, we noticed that there a no difference in terms of cluster description for a clustering obtained on k components or on the initial data. 
+
+
+
+The methodology that we have used to describe clusters can also be used to describe a categorical
+variable, for instance the supplier. 
+
+
 ```{r}
-
-res.hcpc3$desc.var
-
+catdes(dataset, num.var= 1) 
 ```
 
+We will describe here the Supplier categorical variable but the method is the same for the others variables. 
+Using the  results of catdes, we can interpret the different suppliers as classes. We notice first that Raw.Material and Impermeability describe well the "supplier clustering". If we deep dive into the different suppliers insights we can for example notice that the Supplier A is characterized by (in order of importance) : 
+Raw.Material=PS; Impermeability=Type 2,1 ;Shape=Shape 2 and Raw.Material=ABS. This variables best describe the Supplier A. Then, we see that this data is very insightfull. In fact, doing a catdes on supplier for example allows the user to do a benchermarking of the different suppliers. 
 
-
-
-```{r}
-
-res.hcpc2$desc.var$quanti$`2`
-res.hcpc3$desc.var$quanti$`2`
-res.hcpc4$desc.var$quanti$`2`
-
-```
+To simultaneously take into account quantitative and categorical variables in the clustering we will
+use the HCPC function on the results of the FAMD ones. FAMD stands for Factorial Analysis of Mixed
+Data and is a PCA dedicated to mixed data. 
 
 
 ```{r}
-catdes(dataset, num.var= 7) 
-```
-
-
-```{r}
-
-res.famd = FAMD(dataset, ncp = 5, sup.var = c(10, 7,1,5) )
-
-
+res.famd = FAMD(dataset, ncp = 10, sup.var = c(10) )
 ```
 
 ```{r}
 res.famd$eig
-
-
 ```
 
-```{r}
 
+
+```{r}
 res.hcpc <- HCPC(res.famd, nb.clust = -1, graph =  FALSE)
-
 plot.HCPC(res.hcpc, choice = "map", draw.tree = FALSE, select = "drawn", title = '')
-
-
-res.famd
-
-
 ```
 
 
-```{r}
-
-centroids <- res.hcpc$call$X %>% group_by(clust) %>% summarise(Dim.1 = mean(Dim.1), Dim.2 = mean(Dim.2), Dim.3 = mean(Dim.3), Dim.4 = mean(Dim.4),Dim.5 = mean(Dim.5))
-
-centroids
-
-```
-
-```{r}
-
-P <- dataset[3,]
-
-
-famd = FAMD(dataset, ncp = 5, sup.var = c(10,7,1,5))
-
-COORD= as.matrix( predict.FAMD(famd, P)$coord)
-C1 = as.matrix( as.data.frame(centroids[1,2:6]))
-C2 = as.matrix( as.data.frame(centroids[2,2:6]))
-C3 = as.matrix( as.data.frame(centroids[3,2:6]))
-C4 = as.matrix( as.data.frame(centroids[4,2:6]))
-C5 = as.matrix( as.data.frame(centroids[5,2:6]))
-norm(COORD - C1 )
-norm(COORD - C2 )
-norm(COORD - C3 )
-norm(COORD - C4 )
-norm(COORD - C5 )
-
-
-
-
-
-
-```
-
-
-```{r}
- PRICE <- res.hcpc$data.clust %>% group_by(clust) %>% summarise(price_moy = mean(Price), price_sd = sd(Price))
-PRICE
-
-res.hcpc$data.clust
-```
-
-
-
-```{r}
-#  Linear Regression 
-fit <- lm(  Price ~  Diameter +  weight + nb.of.pieces + Impermeability + 
-              Mature.Volume + Raw.Material + Length + Supplier + Finishing + Shape, data= dataset)
-
-
-
-P <- dataset[168,]
-P2 <- P %>% select(-c(10))
-
-P
-predict(fit, P2)
-
-
-
-
-```
+Let's now perform a model to predict the Price :
 
 
 
@@ -568,44 +485,22 @@ predict(fit, P2)
 ```{r}
 
 
-new_data_set <- res.hcpc$data.clust
-View(new_data_set)
-res_famd_new = FAMD(new_data_set, ncp = 6, sup.var = c(10,7,1,5) )
 
-
-
-```
-
-
-```{r}
-
-new_data_set_bis <- as.data.frame(res_famd_new$ind$coord)
-new_data_set_bis$Price <- dataset$Price
-new_data_set_bis <- new_data_set_bis %>% rename(Dim1 = Dim.1, Dim2 = Dim.2,Dim3 = Dim.3,Dim4 = Dim.4, Dim5 = Dim.5, Dim6 = Dim.6)
-P <- new_data_set[1,]
-
-
-predict_price <- function(v) {
+predict_price <- function(v, training_data_set) {
   
-  fit_final <- lm(Price ~ Dim1 + Dim2 + Dim3 + Dim4 + Dim5 + Dim6 , data= new_data_set_bis)
-  P_bis <- as.data.frame(predict.FAMD(res_famd_new, v)$coord)
-  P_bis <- P_bis %>% rename(Dim1 = 'Dim 1', Dim2 = 'Dim 2',Dim3 = 'Dim 3',Dim4 = 'Dim 4', Dim5 = 'Dim 5', Dim6 = 'Dim 6')
-  return(predict(fit_final, P_bis))
-  
-  
-  
-  
-  
-  
+  res_famd = FAMD(training_data_set, ncp = 5, sup.var = c(10,7,1,5))
+  new_data_set <- as.data.frame(res_famd$ind$coord)
+  new_data_set$Price <- training_data_set$Price
+  new_data_set <- new_data_set %>% rename(Dim1 = 'Dim.1', Dim2 = 'Dim.2',Dim3 = 'Dim.3',Dim4 = 'Dim.4', Dim5 = 'Dim.5')
+  fit_final <- lm(Price ~ Dim1 + Dim2 + Dim3 + Dim4 + Dim5  , data= new_data_set)
+  v_projected <- as.data.frame(predict.FAMD(res.famd, v)$coord)
+  v_projected <- v_projected %>% rename(Dim1 = 'Dim 1', Dim2 = 'Dim 2',Dim3 = 'Dim 3',Dim4 = 'Dim 4', Dim5 = 'Dim 5')
+  return(predict(fit_final, v_projected))
 }
 
 
-predict_price(P)
 
-
-
-
-
+predict_price( dataset[143,] , dataset)
 
 
 
@@ -625,79 +520,8 @@ predict_price(P)
 learning_data_set <- rbind(dataset[1:23,], dataset[30:117,],dataset[178:188,])
 testing_data_set <-  rbind(dataset[24:39,], dataset[118:177,],dataset[189:191,])
 
-
-res_famd_learning = FAMD( learning_data_set , ncp = 5, sup.var = c(10, 7,1,5) )
-res_hcpc_learning <- HCPC(res.famd, nb.clust = -1, graph =  FALSE)
-new_data_set_learning <- res_hcpc_learning$data.clust
-res_famd_new_learning = FAMD(new_data_set_learning, ncp = 6, sup.var = c(10,7,1,5) )
-new_data_set_bis_learning <- as.data.frame(res_famd_new$ind$coord)
-new_data_set_bis_learning$Price <- dataset$Price
-new_data_set_bis_learning <- new_data_set_bis_learning %>% rename(Dim1 = Dim.1, Dim2 = Dim.2,Dim3 = Dim.3,Dim4 = Dim.4, Dim5 = Dim.5, Dim6 = Dim.6)
-
-predict_price_final <- function(v) {
-  
-  
-  fit_final <- lm(Price ~ Dim1 + Dim2 + Dim3 + Dim4 + Dim5 + Dim6 , data= new_data_set_bis_learning)
-  
-  centroids <- res_hcpc_learning$call$X %>% group_by(clust) %>% summarise(Dim.1 = mean(Dim.1), Dim.2 = mean(Dim.2), Dim.3 = mean(Dim.3), Dim.4 = mean(Dim.4),Dim.5 = mean(Dim.5))
-  COORD <- as.matrix( predict.FAMD(res_famd_learning, v)$coord)
-  C1 <- as.matrix( as.data.frame(centroids[1,2:6]))
-  C2 <- as.matrix( as.data.frame(centroids[2,2:6]))
-  C3 <- as.matrix( as.data.frame(centroids[3,2:6]))
-  C4 <- as.matrix( as.data.frame(centroids[4,2:6]))
-  C5 <- as.matrix( as.data.frame(centroids[5,2:6]))
-  k <- which.min(c(norm(COORD - C1 ),norm(COORD - C2 ),norm(COORD - C3 ),norm(COORD - C4 ),norm(COORD - C5 )))
-  v$clust <- k 
-  v_bis <- as.data.frame(predict.FAMD(res_famd_new, v)$coord)
-  v_bis <- v_bis %>% rename(Dim1 = 'Dim 1', Dim2 = 'Dim 2',Dim3 = 'Dim 3',Dim4 = 'Dim 4', Dim5 = 'Dim 5', Dim6 = 'Dim 6')
-  
-  return(predict(fit_final, v_bis))
-  
-}
-
-P <- new_data_set[29,]
-
-predict_price_final(P)
-
 ```
-```{r}
-predict_price_final <- function(v) {
-  
-  
-  fit_final <- lm(Price ~ Dim1 + Dim2 + Dim3 + Dim4 + Dim5 + Dim6 , data= new_data_set_bis_learning)
-  
-  centroids <- res_hcpc_learning$call$X %>% group_by(clust) %>% summarise(Dim.1 = mean(Dim.1), Dim.2 = mean(Dim.2), Dim.3 = mean(Dim.3), Dim.4 = mean(Dim.4),Dim.5 = mean(Dim.5))
-  COORD <- as.matrix( predict.FAMD(res_famd_learning, v)$coord)
-  C1 <- as.matrix( as.data.frame(centroids[1,2:6]))
-  C2 <- as.matrix( as.data.frame(centroids[2,2:6]))
-  C3 <- as.matrix( as.data.frame(centroids[3,2:6]))
-  C4 <- as.matrix( as.data.frame(centroids[4,2:6]))
-  C5 <- as.matrix( as.data.frame(centroids[5,2:6]))
-  k <- which.min(c(norm(COORD - C1 ),norm(COORD - C2 ),norm(COORD - C3 ),norm(COORD - C4 ),norm(COORD - C5 )))
-  v$clust <- k 
-  v_bis <- as.data.frame(predict.FAMD(res_famd_new, v)$coord)
-  v_bis <- v_bis %>% rename(Dim1 = 'Dim 1', Dim2 = 'Dim 2',Dim3 = 'Dim 3',Dim4 = 'Dim 4', Dim5 = 'Dim 5', Dim6 = 'Dim 6')
-  
-  return(predict(fit_final, v_bis))
-  
-}
 
-vect <- c()
-
-for (i in 1:79) {
-  
-  
-  v <- testing_data_set[i,]
-  vect <- c(vect,predict_price_final(v))
-  
-
-}
-
-M<- as.data.frame(cbind(vect,testing_data_set$Price, abs(testing_data_set$Price-vect)))
-View(M)
-
-
-```
 
 
 
