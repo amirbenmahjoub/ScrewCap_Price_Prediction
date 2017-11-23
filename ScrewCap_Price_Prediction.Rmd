@@ -46,6 +46,11 @@ summary(dataset)
 
 The data ScrewCap.csv contains 195 lots of screw caps described by 11 variables. Diameter, weight, length are the physical characteristics of the cap; nb.of.pieces corresponds to the number of elements of the cap (the picture above corresponds to a cap with 2 pieces: the valve (clapet) is made of a different material); Mature.volume corresponds to the number of caps ordered and bought by the compagny (number in the lot). All the categorical features are Factors. The other features are numerical. 
 
+
+
+
+
+
 **Univariate and bivariate descriptive statistics**
 
 *Price distribution*
@@ -227,6 +232,13 @@ lines(d, col = "red")
 After studying the other features distribution, we notive that there is no other outliers. Plus, it seems that every numerical feature have the same trend structure. Please find below the other distributions. 
 
 
+
+
+
+
+
+
+
 ```{r}
 d <- density(dataset$Diameter)
 hist(dataset$Diameter, breaks=40, probability = TRUE, main = "Diameter distribution",
@@ -288,6 +300,7 @@ The variable factor map shows us that :
 them positively. In fact, it's natural to say that when the lenght increase for example then the weight, Price and Diameter increase also. 
 * Mature Volume and Number of Pieces are well projected on the 2nd dimensional subspace and then are not really 
 correlated to Lenght, weight, Price and Diameter. Plus, we notice that Mature Volume and Number of Pieces are negatively correlated which means that when the more pieces we have for a product the less the compagny command this kind of product. 
+* Price is uncorelated with nb.of.pieces
 
 This correlations are well explained in the covariance matrix. The cells that correspond to a combinaison of
 highly correlated features have a cov  higher than 0.9 and the cells that correspond to a combinaison of 
@@ -462,11 +475,16 @@ Data and is a PCA dedicated to mixed data.
 
 ```{r}
 res.famd = FAMD(dataset, ncp = 10, sup.var = c(10) )
+
 ```
 
 ```{r}
 res.famd$eig
 ```
+
+
+This FAMD analysis has many impacts on the different results. First, the overall correlation between variables decrease (in fact, FAMD analysis takes into account more variables). We have to take 10 components (against 3 for the PCA) to reach 95% in terms of cumulative variance. Moreover, this analysis show us that the Price is uncorrelated with Supplier, Finishing, nb.of.pieces and Mature.Volume. However, Impermeability and Raw material directly influence the price of the product. Shape is partially correlated with the price.
+
 
 
 
@@ -475,32 +493,28 @@ res.hcpc <- HCPC(res.famd, nb.clust = -1, graph =  FALSE)
 plot.HCPC(res.hcpc, choice = "map", draw.tree = FALSE, select = "drawn", title = '')
 ```
 
+We see here that adding more variables in the analysis reduce the quality of the clustering in comparaison with the last one. 
+
+
+
 
 Let's now perform a model to predict the Price :
 
 
-
-
-
 ```{r}
 
+library(gbm)
 
+index_test <- sample(x=1:nrow(dataset), size=floor(0.3*nrow(dataset)))
+testing_data_set <- dataset[index_test,]
+training_data_set <- dataset[-index_test,]
 
-predict_price <- function(v, training_data_set) {
-  
-  res_famd = FAMD(training_data_set, ncp = 5, sup.var = c(10,7,1,5))
-  new_data_set <- as.data.frame(res_famd$ind$coord)
-  new_data_set$Price <- training_data_set$Price
-  new_data_set <- new_data_set %>% rename(Dim1 = 'Dim.1', Dim2 = 'Dim.2',Dim3 = 'Dim.3',Dim4 = 'Dim.4', Dim5 = 'Dim.5')
-  fit_final <- lm(Price ~ Dim1 + Dim2 + Dim3 + Dim4 + Dim5  , data= new_data_set)
-  v_projected <- as.data.frame(predict.FAMD(res.famd, v)$coord)
-  v_projected <- v_projected %>% rename(Dim1 = 'Dim 1', Dim2 = 'Dim 2',Dim3 = 'Dim 3',Dim4 = 'Dim 4', Dim5 = 'Dim 5')
-  return(predict(fit_final, v_projected))
-}
+fit <- lm(Price ~ Diameter + Length + weight + Raw.Material + Impermeability + Shape, data= training_data_set)
+summary(fit)
+predicted_price <- predict.lm(fit,testing_data_set)
+real_price <- testing_data_set$Price
+Prediction <-  data_frame(predicted_price,real_price) %>% mutate(difference = abs(predicted_price-real_price))
 
-
-
-predict_price( dataset[143,] , dataset)
 
 
 
@@ -508,19 +522,30 @@ predict_price( dataset[143,] , dataset)
 
 ```
 
+The model generated here by keeping only variables that explain the price allows us to have an Adjusted R-squared of 75.98 % (for this specific training dataset generated)
 
+```{r}
+p <- ggplot(Prediction, aes(x= real_price)) + geom_point(aes(y= predicted_price)) + geom_line(aes(y= real_price))
 
+p
+```
 
-
+This graph shows us the points that are overestimated/underestimated for the testing dataset. It seems that in this example low prices are overestimated and high prices are underestimated. 
 
 
 
 ```{r}
-
-learning_data_set <- rbind(dataset[1:23,], dataset[30:117,],dataset[178:188,])
-testing_data_set <-  rbind(dataset[24:39,], dataset[118:177,],dataset[189:191,])
-
+quantile(Prediction$difference)
 ```
+
+For the performance, we can say that we estimate with less than 2 centime error 50% of the data and with less than 4 centime error 75% of the data. 
+
+ 
+
+
+
+
+
 
 
 
