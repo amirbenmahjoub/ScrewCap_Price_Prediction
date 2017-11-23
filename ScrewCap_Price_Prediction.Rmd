@@ -541,7 +541,9 @@ The previous analysis can help us interpret this results because it will be poss
 
 **QUESTION 17**
 
+It's not smart to do one model per supplier because : 
 
+*
 
 
 **QUESTION 18**
