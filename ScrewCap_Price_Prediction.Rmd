@@ -496,8 +496,6 @@ plot.HCPC(res.hcpc, choice = "map", draw.tree = FALSE, select = "drawn", title =
 We see here that adding more variables in the analysis reduce the quality of the clustering in comparaison with the last one. 
 
 
-
-
 Let's now perform a model to predict the Price :
 
 
@@ -540,7 +538,18 @@ quantile(Prediction$difference)
 
 For the performance, we can say that we estimate with less than 2 centime error 50% of the data and with less than 4 centime error 75% of the data. 
 
- 
+The previous analysis can help us interpret this results because it will be possible to link an over/under estimated point with its position in the individual factor map and then understand that this point is not linked with the drivers of the price.
+
+These data contained missing values. One representative in the compagny suggests either to put 0 in the
+missing cells or to impute with the median of the variables. Comment. For the categorical variables with
+missing values, it is decided to create a new category “missing”. Comment.
+
+The first idea will change all the structure of our data becaue it will change the correlation between 
+the different variables. The second idea will not fix the problem and will change nothing because this method only renames  the "NA" category to a "missing" category.
+
+
+
+
 
 
 
