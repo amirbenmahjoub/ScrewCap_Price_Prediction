@@ -25,7 +25,7 @@ library(plotly)
 ```
 
 
-**Screw Caps Dataset**
+**QUESTION 1 : Screw Caps Dataset**
 
 Now, we load the dataset used for this study:
 
@@ -48,10 +48,7 @@ The data ScrewCap.csv contains 195 lots of screw caps described by 11 variables.
 
 
 
-
-
-
-**Univariate and bivariate descriptive statistics**
+**QUESTION 2 : Univariate and bivariate descriptive statistics**
 
 *Price distribution*
 
@@ -94,6 +91,8 @@ summary(fit_price_lenght)
 
 We can observe a dependence. 63.9 % of the variability of the price is explained by the lenght. 
 
+*Price dependency on weight*
+
 Now we study the price dependency on weight. 
 
 ```{r}
@@ -104,7 +103,13 @@ fit_price_weight <- lm(Price~weight, data=dataset)
 summary(fit_price_weight)
 ``` 
 
+
+
 We can also observe a dependence. 62 % of the variability of the price is explained by the weight. 
+
+
+*Price dependency on  Impermeability, Shape and Supplier*
+
 
 Now we will discuss the price dependency on some categorical features such as Impermeability, Shape and Supplier. 
 
@@ -197,6 +202,8 @@ head(PriceComp_avg_price_per_weight)
 *In terms of absolute price, the supplier B is the less expensive. However, Supplier B is also the supplier which has the highest absolute price.
 *In terms of average price / weight Supplier A has is the less expensive.
 
+**QUESTION 3 : Identifying outliers**
+
 One important point in exploratory data analysis consists in identifying potential outliers. 
 Let's identify this outliers given different features. For Mature.Volume variable : 
 
@@ -213,11 +220,8 @@ lines(d, col = "red")
 
 We can clearly notice here an outlier. We can now remove it 
 
-
 ```{r}
-
 dataset <- dataset %>% filter ( Mature.Volume < 600000 )  
-
 ```
 
 Let's verify the data now : 
@@ -229,15 +233,7 @@ hist(dataset$Mature.Volume, breaks=40, probability = TRUE,main = "Mature Volume 
 lines(d, col = "red")
 ```
 
-After studying the other features distribution, we notive that there is no other outliers. Plus, it seems that every numerical feature have the same trend structure. Please find below the other distributions. 
-
-
-
-
-
-
-
-
+After studying the other features distribution, we notice that there is no other outliers. Plus, it seems that every numerical feature have the same trend structure. Please find below the other distributions:
 
 ```{r}
 d <- density(dataset$Diameter)
@@ -267,6 +263,8 @@ lines(d, col = "red")
 ```
 
 
+**QUESTION 4/5/6/7  : PCA and correlation matrix **
+
 Now we will perform a PCA on the data. A PCA will allows us to fin a low-dimensional reprensation of the data that 
 captures the "essense" of the raw data. Plus, a PCA will allows us denoise the data. This preprocessing and 
 data exploration helps us to better understand/visualise the relations between the differents features and observations and to prepare the data for the prediction process. PCA deals with continuous variables but
@@ -282,9 +280,7 @@ fviz_pca_ind(res.pca)
 fviz_pca_ind(res.pca, col.ind="cos2", label=c("quali"), geom = "point") + scale_color_gradient2(low="lightblue", mid="blue", high="darkblue", midpoint=0.6)+ theme_minimal() 
 ```
 
-
 Before commenting this graphs, let's compute also the correlation matrix : 
-
 
 ```{r}
 #Scaling the variables: 
@@ -324,14 +320,22 @@ plot(res.pca$eig[,3], type="l", ylab = "Cumulative percentage of inertia", xlab 
 * Concerning the pourcentage of inertia, this graph show us that we can synthetise more than 95% of the variance with the 3 first synthetic vectors. 
 
 
+**QUESTION 8  : Synthetic variables **
+
+
 The R object with the two principal components which are the synthetic variables the most correlated to all the variables is the two eigen vectors of the PCA linked to the two highest eigenvalues. 
 
 ```{r}
 as.data.frame(res.pca$var$coord[,1:2])
 ```
 
+
+
+**QUESTION 9 **
+
 PCA is often used as a pre-processing step before applying a clustering algorithm. In fact, we often perform the CAH or the k-means on the $k$ principal components to denoise the data. In this setting $k$ is choosen as large since we do not want to loose any information, but want to discard the last components that can be considered as noise. Consequently, we  keep the number of dimensions $k$ such that we reach 95% of the inertia in PCA. In our case we have $k=3$ (cf last graph)
 
+**QUESTION 10 **
 
 Let's now perform a kmeans algorithm on the selected k principal components of PCA. 
 
@@ -356,7 +360,7 @@ fviz_nbclust(dat, kmeans, method = "wss") + geom_vline(xintercept = 3, linetype 
 
 Using "methode du coude" we find that the optimal number of cluster is 3. 
 
-
+**QUESTION 11 **
 
 ```{r}
 
@@ -368,22 +372,12 @@ res.pca3 <- PCA(dataset, quali.sup=c(1,5,6,7,9), quanti.sup = 10, scale = TRUE, 
 ```
 
 ```{r}
-
 # Performing the AHC on the 3 principal components of the PCA
-
 res.hcpc3 <- HCPC(res.pca3, nb.clust = -1)
-
-
-
-
-
-
 plot(res.hcpc3$call$t$within[1:14]) 
-
-
-
-
 ```
+
+**QUESTION 12 : Cluster description **
 
 
 * The optimal number of clusters calculated by the hcpc function is 3. This function used "method du coude" on   call$t$within. 
@@ -445,16 +439,16 @@ res.hcpc3$desc.ind$para$`1`
 
 The product 94,95,142,74,144 are closest to the centre of the cluster 1 centroid and then, are representative of this cluster. 
 
+**QUESTION 13  **
 
-If someone ask you why you have selected k components and not k + 1 or k − 1, what is your answer?
-(could you suggest a strategy to assess the stability of the approach? - are there many differences
-between the clustering obtained on k components or on the initial data) 
+
 
 We didn't choose $k = 2$ because in this configuration, the two first eigen vectors describe less than 95% of the data. We didn't choose $k=4$ because it's not necessary given the fact that the configuration $k=3$ is describing already 95% of our data.
 
 A strategy to assess the stability of the approach is to do the same study that we did but for the hcpc with 2 and 4 compenent. Then, we will be able to compare the different p-values for each configuration and see going form 2 to 3 or from 3 to 4 have a significant impact on the results of our clustering. After doing this study we noticed that we have the same p-value results for $k=3$ and $k=4$. Plus, we noticed that we have the  p-value results are in average better for  $k=3$ than $k=2$. This insights explain us that 3 components is the best compromise and choice. On the same vein, we noticed that there a no difference in terms of cluster description for a clustering obtained on k components or on the initial data. 
 
 
+**QUESTION 14  **
 
 The methodology that we have used to describe clusters can also be used to describe a categorical
 variable, for instance the supplier. 
@@ -467,6 +461,8 @@ catdes(dataset, num.var= 1)
 We will describe here the Supplier categorical variable but the method is the same for the others variables. 
 Using the  results of catdes, we can interpret the different suppliers as classes. We notice first that Raw.Material and Impermeability describe well the "supplier clustering". If we deep dive into the different suppliers insights we can for example notice that the Supplier A is characterized by (in order of importance) : 
 Raw.Material=PS; Impermeability=Type 2,1 ;Shape=Shape 2 and Raw.Material=ABS. This variables best describe the Supplier A. Then, we see that this data is very insightfull. In fact, doing a catdes on supplier for example allows the user to do a benchermarking of the different suppliers. 
+
+**QUESTION 15 **
 
 To simultaneously take into account quantitative and categorical variables in the clustering we will
 use the HCPC function on the results of the FAMD ones. FAMD stands for Factorial Analysis of Mixed
@@ -495,6 +491,8 @@ plot.HCPC(res.hcpc, choice = "map", draw.tree = FALSE, select = "drawn", title =
 
 We see here that adding more variables in the analysis reduce the quality of the clustering in comparaison with the last one. 
 
+
+**QUESTION 16**
 
 Let's now perform a model to predict the Price :
 
@@ -539,6 +537,14 @@ quantile(Prediction$difference)
 For the performance, we can say that we estimate with less than 2 centime error 50% of the data and with less than 4 centime error 75% of the data. 
 
 The previous analysis can help us interpret this results because it will be possible to link an over/under estimated point with its position in the individual factor map and then understand that this point is not linked with the drivers of the price.
+
+
+**QUESTION 17**
+
+
+
+
+**QUESTION 18**
 
 These data contained missing values. One representative in the compagny suggests either to put 0 in the
 missing cells or to impute with the median of the variables. Comment. For the categorical variables with
