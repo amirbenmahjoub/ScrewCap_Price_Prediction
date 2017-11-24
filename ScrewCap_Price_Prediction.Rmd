@@ -543,7 +543,9 @@ The previous analysis can help us interpret this results because it will be poss
 
 It's not smart to do one model per supplier because : 
 
-*
+* There is no price dependency on suppliers.
+* It will reduce the number of points for each regression (Especillay for Supplier C).
+* We will loose information. For instance, maybe that there will be a Supplier A product to  predict which have the same characteristics than a Supplier B product. 
 
 
 **QUESTION 18**
