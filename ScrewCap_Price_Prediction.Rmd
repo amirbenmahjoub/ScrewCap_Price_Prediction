@@ -21,7 +21,6 @@ library(fpc)
 library(factoextra)
 library(FactoInvestigate)
 library(plotly)
-
 ```
 
 
@@ -44,9 +43,7 @@ summary(dataset)
 
 ```
 
-The data ScrewCap.csv contains 195 lots of screw caps described by 11 variables. Diameter, weight, length are the physical characteristics of the cap; nb.of.pieces corresponds to the number of elements of the cap (the picture above corresponds to a cap with 2 pieces: the valve (clapet) is made of a different material); Mature.volume corresponds to the number of caps ordered and bought by the compagny (number in the lot). All the categorical features are Factors. The other features are numerical. 
-
-
+The data ScrewCap.csv contains 195 lots of screw caps described by 11 variables. Diameter, weight, length are the physical characteristics of the cap; nb.of.pieces corresponds to the number of elements of the cap (the picture above corresponds to a cap with 2 pieces: the valve (clapet) is made of a different material); Mature.volume corresponds to the number of caps ordered and bought by the compagny (number in the lot). All the categorical features are factors. The other features are numerical. 
 
 **QUESTION 2 : Univariate and bivariate descriptive statistics**
 
@@ -64,31 +61,28 @@ lines(d, col = "red")
 We have here a bimodal distribution and we can describe it in more details with the quantiles: 
 
 ```{r}
-
+#Price boxplot
 p <- plot_ly(type = 'box') %>%  add_boxplot(y = dataset$Price, jitter = 0.3, pointpos = -1.8, boxpoints = 'all',
               marker = list(color = 'rgb(7,40,89)'),
               line = list(color = 'rgb(7,40,89)'),
               name = "All Points") %>%  layout( title = 'Price Boxplot',  yaxis = list(title = 'Price'))
 p
 ```
-
-
 Using this plotly boxplot we notice that we have 25% of the prices between 6.477451 and 11.807022. 50% between 6.477451 and 14.384413 and 75% between 6.477451 and 18.902429. The remaning 25‰ are data located in a wide range of
 prices between 18.902429 and 46.610372 
-
 
 *Price dependency on length*
 
 Let's study now the price dependency on lenght. 
 
 ```{r}
+#Plotting the fitting
 p <- ggplot(data=dataset, aes(x= Length, y= Price)) + geom_point(size=1) + geom_smooth(method=lm) + ggtitle(" Price versus lenght ")
 ggplotly(p)
-
+#Fitting parameters
 fit_price_lenght <- lm(Price~Length, data=dataset)
 summary(fit_price_lenght)
 ``` 
-
 We can observe a dependence. 63.9 % of the variability of the price is explained by the lenght. 
 
 *Price dependency on weight*
@@ -103,18 +97,13 @@ fit_price_weight <- lm(Price~weight, data=dataset)
 summary(fit_price_weight)
 ``` 
 
-
-
 We can also observe a dependence. 62 % of the variability of the price is explained by the weight. 
 
-
 *Price dependency on  Impermeability, Shape and Supplier*
-
 
 Now we will discuss the price dependency on some categorical features such as Impermeability, Shape and Supplier. 
 
 ```{r}
-
 p <- plot_ly(type = 'box') %>%  add_boxplot(y = dataset$Price , x = dataset$Impermeability, jitter = 0.3, pointpos = -1.8, boxpoints = 'all',
               marker = list(color = 'rgb(7,40,89)'),
               line = list(color = 'rgb(7,40,89)'),
@@ -123,43 +112,31 @@ p
 
 fit_price_impermeability <- lm(Price~ Impermeability, data=dataset)
 summary(fit_price_impermeability)
-
-
 ``` 
-
 The boxplot show us that each impermeability type gather a wide range of prices : 
 
 * Type 1 : from 1.6 to 39.7
 * Type 2 : from 12.8 to 46.6
 
-However, we notice  a dependence. 43 % of the variability of the price is explained by the impermeability type. Plus, we observe that  the price range is statistically different for Type 1 and Type 2. Type 1 is statistically cheaper than Type 2 : 
+However, we notice  a little dependence. 43 % of the variability of the price is explained by the impermeability type. Plus, we observe that  the price range is statistically different for Type 1 and Type 2. Type 1 is statistically cheaper than Type 2 : 
 
 * Type 1 : 50% of the data between $q_{1} = 11$.69 and $q_{3} = 17$
 * Type 2 : 50% of the data between $q_{1} = 26.5$ and $q_{3} = 34.1$
 
-
 Concerning the price dependency on Shape : 
 
-
-
 ```{r}
-
-
 p <- plot_ly(type = 'box') %>%  add_boxplot(y = dataset$Price , x = dataset$Shape, jitter = 0.3, pointpos = -1.8, boxpoints = 'all',
               marker = list(color = 'rgb(7,40,89)'),
               line = list(color = 'rgb(7,40,89)'),
               name = "Price box") %>%  layout( title = 'Price versus Shape Boxplot',  yaxis = list(title = 'Price'))
 p
-
 fit_price_shape <- lm(Price~ Shape, data=dataset)
 summary(fit_price_shape)
-
 ```
+In this case, it's hard to notice a dependence between price and shape. Only 24 % of the variability of the price is explained by the Shape type. However, there is some insights:
 
-
-In this case, it's hard to notice  a dependence between price and shape. Only 24 % of the variability of the price is explained by the Shape type. However, there is some insights  :
-
-* Comparing Shape 1 and Shape 2 we notice that shape 1 prices are more gathered into a small statisticall interval ( $q_{2} = 11.1$ , $q_{3} =16.1 $) in comparaison with shape 2 price data ( $q_{2} = 14$ , $q_{3} =28.8 $)
+* Comparing Shape 1 and Shape 2 we notice that shape 1 prices are more gathered into a small statistical interval ( $q_{2} = 11.1$ , $q_{3} =16.1 $) in comparaison with shape 2 price data ( $q_{2} = 14$ , $q_{3} =28.8 $)
 * There isn't many products for shape 3 and Shape 4 in comparaison with the two first shapes. However, we can see that the prices for shape 3 and shape 4 are located in a small interval in comparaison with the two other last shapes.
 
 
@@ -167,21 +144,16 @@ Concerning the price dependency on Suppliers :
 
 
 ```{r}
-
-
 p <- plot_ly(type = 'box') %>%  add_boxplot(y = dataset$Price , x = dataset$Supplier, jitter = 0.3, pointpos = -1.8, boxpoints = 'all',
               marker = list(color = 'rgb(7,40,89)'),
               line = list(color = 'rgb(7,40,89)'),
               name = "Price box") %>%  layout( title = 'Price versus Impermeability Boxplot',  yaxis = list(title = 'Price'))
 p
-
 fit_price_supplier <- lm(Price~ Supplier, data=dataset)
 summary(fit_price_supplier)
-
 ```
 
 There is no dependency on the price. Let's study the prices in more details : 
-
 
 ```{r}
 PriceComp_avg <- dataset %>% select(Supplier,Price) %>% group_by(Supplier) %>% summarise(Average_Price = mean(Price)) 
@@ -195,7 +167,6 @@ head(PriceComp_min)
 PriceComp_avg_price_per_weight <- PriceComp_min <- dataset %>% select(Supplier,Price,weight) %>% group_by(Supplier) %>% summarise(Price_per_weight = mean(Price)/mean(weight))
 
 head(PriceComp_avg_price_per_weight)
-
 ```
 
 *In terms of average price, the supplier C is the less expensive. 
@@ -207,7 +178,6 @@ head(PriceComp_avg_price_per_weight)
 One important point in exploratory data analysis consists in identifying potential outliers. 
 Let's identify this outliers given different features. For Mature.Volume variable : 
 
-
 ```{r}
 
 d <- density(dataset$Mature.Volume)
@@ -216,7 +186,6 @@ hist(dataset$Mature.Volume, breaks=40, probability = TRUE, main = "Mature Volume
 lines(d, col = "red")
 
 ```
-
 
 We can clearly notice here an outlier. We can now remove it 
 
@@ -240,8 +209,6 @@ d <- density(dataset$Diameter)
 hist(dataset$Diameter, breaks=40, probability = TRUE, main = "Diameter distribution",
      xlab = "Mature Volume")
 lines(d, col = "red")
-
-
 ```
 ```{r}
 d <- density(dataset$weight)
@@ -262,16 +229,12 @@ hist(dataset$Length, breaks=40, probability = TRUE, main = "Lenght distribution"
 lines(d, col = "red")
 ```
 
-
 **QUESTION 4/5/6/7  : PCA and correlation matrix **
 
-Now we will perform a PCA on the data. A PCA will allows us to fin a low-dimensional reprensation of the data that 
-captures the "essense" of the raw data. Plus, a PCA will allows us denoise the data. This preprocessing and 
-data exploration helps us to better understand/visualise the relations between the differents features and observations and to prepare the data for the prediction process. PCA deals with continuous variables but
+Now we will perform a PCA on the data. A PCA will allows us to fin a low-dimensional reprensation of the data that  captures the "essense" of the raw data. Plus, a PCA will allows us denoise the data. This preprocessing and data exploration helps us to better understand/visualise the relations between the differents features and observations and to prepare the data for the prediction process. PCA deals with continuous variables but
 categorical variables are the projection of the categories at the barycentre of the observations which take the categories. 
 
-As we want to predict the price and we have Supplier, Shape, Impermeability and Finishing as qualitative variables,
-we will consider this last ones as illustrative. Let's now process the PCA : 
+As we want to predict the price and we have Supplier, Shape, Impermeability and Finishing as qualitative variables, we will consider this last ones as illustrative. Let's now process the PCA : 
 
 ```{r}
 res.pca <- PCA(dataset, quali.sup=c(1,5,6,7,9), quanti.sup = 10, scale = TRUE)
@@ -288,25 +251,19 @@ X <- scale(as.matrix(dataset %>% select(-c(1,5,6,7,9,10))))
 #Plotting the correlation matrix: 
 as.data.frame(cov(X))
 ```
-
-
 The variable factor map shows us that : 
 
-* Lenght, weight, price and diameter are well projected on the 1st dimensional subspace and also correlated between
-them positively. In fact, it's natural to say that when the lenght increase for example then the weight, Price and Diameter increase also. 
-* Mature Volume and Number of Pieces are well projected on the 2nd dimensional subspace and then are not really 
-correlated to Lenght, weight, Price and Diameter. Plus, we notice that Mature Volume and Number of Pieces are negatively correlated which means that when the more pieces we have for a product the less the compagny command this kind of product. 
-* Price is uncorelated with nb.of.pieces
+* Lenght, weight, price and diameter are well projected on the 1st dimensional subspace and also correlated betweenthem positively. In fact, it's natural to say that when the lenght increase for example then the weight, Price and Diameter increase also. 
+* Mature Volume and Number of Pieces are well projected on the 2nd dimensional subspace and then are not really correlated to Lenght, weight, Price and Diameter. Plus, we notice that Mature Volume and Number of Pieces are negatively correlated which means that when the more pieces we have for a product the less the compagny command this kind of product. 
 
 This correlations are well explained in the covariance matrix. The cells that correspond to a combinaison of
 highly correlated features have a cov  higher than 0.9 and the cells that correspond to a combinaison of 
 uncorrelated (orthogonal) features have a cov lower than 0.2 - 0.3. 
 
-* The PCA focuses on the relationships between the continuous variables. In fact, the PCA compute the 
-vectors which are the synthetic variables the most correlated to all the continuous variables. Then, its possible to study the projection of the observations/features on this vectors and discuss the link between them. The issue
-is that the PCA does not handle categorical variables to the computation of the synthetic vectors.
+* The PCA focuses on the relationships between the continuous variables. In fact, the PCA computes the 
+vectors which are the synthetic variables the most correlated to all the continuous variables. Then, its possible to study the projection of the observations/features on this vectors and discuss the link between them. The issue is that the PCA does not handle categorical variables to the computation of the synthetic vectors.
 
-* Let's now focus on the individual factor map : The barycentre related to $Impermeability = Type2$ and
+* Let's now focus on the individual factor map: the barycentre related to $Impermeability = Type2$ and
 $Raw.Material = PS$ are near to the first synthetic axe which means that this two categories Type2 and PS are highly correlated to this axe and then, given the previous analysis to Lenght, weight, price and diameter. In fact, for instance, we have seen that Type 2 have a higher price in average than Type 1. We can say also for example
 than a PS product is related to a high diameter. 
 
@@ -316,20 +273,15 @@ than a PS product is related to a high diameter.
 plot(res.pca$eig[,3], type="l", ylab = "Cumulative percentage of inertia", xlab = "Nb of synthetic vectors")
 ```
 
-
 * Concerning the pourcentage of inertia, this graph show us that we can synthetise more than 95% of the variance with the 3 first synthetic vectors. 
 
-
 **QUESTION 8  : Synthetic variables **
-
 
 The R object with the two principal components which are the synthetic variables the most correlated to all the variables is the two eigen vectors of the PCA linked to the two highest eigenvalues. 
 
 ```{r}
 as.data.frame(res.pca$var$coord[,1:2])
 ```
-
-
 
 **QUESTION 9 **
 
@@ -338,7 +290,6 @@ PCA is often used as a pre-processing step before applying a clustering algorith
 **QUESTION 10 **
 
 Let's now perform a kmeans algorithm on the selected k principal components of PCA. 
-
 
 ```{r}
 
@@ -363,12 +314,8 @@ Using "methode du coude" we find that the optimal number of cluster is 3.
 **QUESTION 11 **
 
 ```{r}
-
 #Performing a PCA on the 3 principal compenents
 res.pca3 <- PCA(dataset, quali.sup=c(1,5,6,7,9), quanti.sup = 10, scale = TRUE, ncp = 3)
-
-
-
 ```
 
 ```{r}
@@ -379,35 +326,23 @@ plot(res.hcpc3$call$t$within[1:14])
 
 **QUESTION 12 : Cluster description **
 
+* The optimal number of clusters calculated by the hcpc function is 3.
 
-* The optimal number of clusters calculated by the hcpc function is 3. This function used "method du coude" on   call$t$within. 
-
- 
 * We now aim at describing the clusters. First, let's study the variables which are most important for the partition. The hcpc function compute a fisher test that allows us to evaluate the link between qualitative and quantitative variable. Here : the clusters and our quantitative variables. 
 
-
 ```{r}
-
-
 as.data.frame(res.hcpc3$desc.var$quanti.var)
-
 ```
-
 We notice here that all our quantitative variables describe well our 3 clusters. The 3 variables that describe very well our 3 clusters (low p-value) are Lenght, Diameter and weight. However, this is linked with our PCA. In fact, this last three variables are very representative of the first dimension of the PCA and then describe well our data. Given the fact that we performed the hcpc of the PCA data, it's normal to find that these three variables describe well our clusters. 
 
-
 For the qualitative variables, we perform a khi2 test: 
-
 
 ```{r }
 res.hcpc3$desc.var$test.chi2
 ```
-
-
 The variable Impermeability seems to be the most related to the partitioning (lowest p-value) 
 
-
-* Now we want to characterize cluster 1 (same methode for the other clusters)  in terms of variables that best describe this cluster. In other terms, we want to know for each quantitative variable $x$, if there is a statistical difference for this variable between cluster $1$ and the whole population (simple standard Gaussian distribution test)
+* Now we want to characterize cluster 1 (same method for the other clusters)  in terms of variables that best describe this cluster. In other terms, we want to know for each quantitative variable $x$, if there is a statistical difference for this variable between cluster $1$ and the whole population (simple standard Gaussian distribution test)
 
 For the quantitative variables : 
 
@@ -415,18 +350,10 @@ For the quantitative variables :
 res.hcpc3$desc.var$quanti$`1`
 ```
 
-
 The Cluster 1 is well defined by all the quantitative variables and more specifically by Mature.Volume. We can guess this result because the cluster 1 ( black points) is situated on the same axe than the Mature.Volume vector on the previous PCA. 
 
-
-
-
-
-
 ```{r}
-
 res.hcpc3$desc.var$category$`1`
-
 ```
 
 On the same vein, $Raw.Material=PP$ and $Shape=Shape 2$ are defining well the $cluster 1$ given the $p-value$.
@@ -441,26 +368,21 @@ The product 94,95,142,74,144 are closest to the centre of the cluster 1 centroid
 
 **QUESTION 13  **
 
-
-
 We didn't choose $k = 2$ because in this configuration, the two first eigen vectors describe less than 95% of the data. We didn't choose $k=4$ because it's not necessary given the fact that the configuration $k=3$ is describing already 95% of our data.
 
 A strategy to assess the stability of the approach is to do the same study that we did but for the hcpc with 2 and 4 compenent. Then, we will be able to compare the different p-values for each configuration and see going form 2 to 3 or from 3 to 4 have a significant impact on the results of our clustering. After doing this study we noticed that we have the same p-value results for $k=3$ and $k=4$. Plus, we noticed that we have the  p-value results are in average better for  $k=3$ than $k=2$. This insights explain us that 3 components is the best compromise and choice. On the same vein, we noticed that there a no difference in terms of cluster description for a clustering obtained on k components or on the initial data. 
-
 
 **QUESTION 14  **
 
 The methodology that we have used to describe clusters can also be used to describe a categorical
 variable, for instance the supplier. 
 
-
 ```{r}
 catdes(dataset, num.var= 1) 
 ```
 
 We will describe here the Supplier categorical variable but the method is the same for the others variables. 
-Using the  results of catdes, we can interpret the different suppliers as classes. We notice first that Raw.Material and Impermeability describe well the "supplier clustering". If we deep dive into the different suppliers insights we can for example notice that the Supplier A is characterized by (in order of importance) : 
-Raw.Material=PS; Impermeability=Type 2,1 ;Shape=Shape 2 and Raw.Material=ABS. This variables best describe the Supplier A. Then, we see that this data is very insightfull. In fact, doing a catdes on supplier for example allows the user to do a benchermarking of the different suppliers. 
+Using the  results of catdes, we can interpret the different suppliers as classes. We notice first that Raw.Material and Impermeability describe well the "supplier clustering". If we deep dive into the different suppliers insights we can for example notice that the Supplier A is characterized by (in order of importance) : Raw.Material=PS; Impermeability=Type 2,1 ;Shape=Shape 2 and Raw.Material=ABS. This variables best describe the Supplier A. Then, we see that this data is very insightfull. In fact, doing a catdes on supplier for example allows the user to do a benchermarking of the different suppliers. 
 
 **QUESTION 15 **
 
@@ -468,29 +390,21 @@ To simultaneously take into account quantitative and categorical variables in th
 use the HCPC function on the results of the FAMD ones. FAMD stands for Factorial Analysis of Mixed
 Data and is a PCA dedicated to mixed data. 
 
-
 ```{r}
 res.famd = FAMD(dataset, ncp = 10, sup.var = c(10) )
-
 ```
 
 ```{r}
 res.famd$eig
 ```
 
-
 This FAMD analysis has many impacts on the different results. First, the overall correlation between variables decrease (in fact, FAMD analysis takes into account more variables). We have to take 10 components (against 3 for the PCA) to reach 95% in terms of cumulative variance. Moreover, this analysis show us that the Price is uncorrelated with Supplier, Finishing, nb.of.pieces and Mature.Volume. However, Impermeability and Raw material directly influence the price of the product. Shape is partially correlated with the price.
-
-
-
 
 ```{r}
 res.hcpc <- HCPC(res.famd, nb.clust = -1, graph =  FALSE)
 plot.HCPC(res.hcpc, choice = "map", draw.tree = FALSE, select = "drawn", title = '')
 ```
-
 We see here that adding more variables in the analysis reduce the quality of the clustering in comparaison with the last one. 
-
 
 **QUESTION 16**
 
@@ -498,22 +412,17 @@ Let's now perform a model to predict the Price :
 
 
 ```{r}
-
-library(gbm)
-
+#Creating a testing and training datset
 index_test <- sample(x=1:nrow(dataset), size=floor(0.3*nrow(dataset)))
 testing_data_set <- dataset[index_test,]
 training_data_set <- dataset[-index_test,]
-
+#Performing fitting with usefull parameters detected before
 fit <- lm(Price ~ Diameter + Length + weight + Raw.Material + Impermeability + Shape, data= training_data_set)
 summary(fit)
+#Predicting the testing data set
 predicted_price <- predict.lm(fit,testing_data_set)
 real_price <- testing_data_set$Price
 Prediction <-  data_frame(predicted_price,real_price) %>% mutate(difference = abs(predicted_price-real_price))
-
-
-
-
 
 
 ```
@@ -529,7 +438,6 @@ p
 This graph shows us the points that are overestimated/underestimated for the testing dataset. It seems that in this example low prices are overestimated and high prices are underestimated. 
 
 
-
 ```{r}
 quantile(Prediction$difference)
 ```
@@ -543,20 +451,16 @@ The previous analysis can help us interpret this results because it will be poss
 
 It's not smart to do one model per supplier because : 
 
-* There is no price dependency on suppliers.
+* There is no price dependency on suppliers (uncorrelated)
 * It will reduce the number of points for each regression (Especillay for Supplier C).
 * We will loose information. For instance, maybe that there will be a Supplier A product to  predict which have the same characteristics than a Supplier B product. 
 
 
 **QUESTION 18**
 
-These data contained missing values. One representative in the compagny suggests either to put 0 in the
-missing cells or to impute with the median of the variables. Comment. For the categorical variables with
-missing values, it is decided to create a new category “missing”. Comment.
 
 The first idea will change all the structure of our data becaue it will change the correlation between 
 the different variables. The second idea will not fix the problem and will change nothing because this method only renames  the "NA" category to a "missing" category.
-
 
 
 
